@@ -42,12 +42,12 @@ PROJECT_MODULES := modules/$(TARGET)/sapi_rtos \
 
 # source files folder
 PROJECT_SRC_FOLDERS := $(PROJECT)/src \
-	 				   RTOS/files/src
+	 				   EDU-CIAA-RTOS/files/src
 
 # header files folder
 PROJECT_INC_FOLDERS := $(PROJECT)/inc \
-					   RTOS/files/inc
+					   EDU-CIAA-RTOS/files/inc
 
 # source files
-PROJECT_C_FILES := $(wildcard $(PROJECT)/src/*.c RTOS/files/src/*.c)
+PROJECT_C_FILES := $(wildcard $(PROJECT)/src/*.c EDU-CIAA-RTOS/files/src/*.c)
 PROJECT_ASM_FILES := $(wildcard $(PROJECT)/src/*.S)
