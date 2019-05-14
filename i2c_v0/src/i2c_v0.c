@@ -119,22 +119,24 @@ static void blink_tsk(void * a)
 static void lcd_tsk(void * a)
 {	i2cConfig( I2C0, 100000 );
 	int j=0;
-    uint8_t* transmitBuffer=104;
-    uint16_t transmitSize=16;
+    uint8_t adress = 0x3F;//0x3F; //0x27 //0x20 //39
+    LCD_Init();
+    tickInit(1);
 	while (1) {
 
 		Board_LED_Toggle(3);
 
-
-
-		i2cWrite( I2C0,
-		          10,
-		          transmitBuffer,
-		          transmitSize,
-		          0);
+		LCDclear();
+		LCDbacklight();
+		LCDcursorOff();
+		LCDblinkOff();
+		LCDsetCursor(1, 0);
+		LCD_Write_Str("Software en");
+		LCDsetCursor(1, 1);
+		LCD_Write_Str("Tiempo Real");
 
 		vTaskDelay(500 / portTICK_RATE_MS);
-		//for(j=0;j<(100000000)*3/5;j++);
+
 	}
 }
 
