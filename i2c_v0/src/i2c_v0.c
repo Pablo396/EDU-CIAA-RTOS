@@ -61,13 +61,17 @@ typedef struct {
 	uint8_t pin;
 } io_puerto_t;
 
-
+typedef struct{
+	int min;
+	int seg;
+	int mseg;
+}hora_t;
 bool_t flag_start_stop = FALSE;
 bool_t flag_reset = FALSE;
 bool_t flag_up_down = TRUE;
 
 
-uint8_t contador=0;
+int contador=0;
 
 //static const io_puerto_t gpioBOTTONBits[] = {{0,4},{0,8},{0,9},{1,9}};
 
@@ -86,7 +90,22 @@ static void initHardware(void);
 
 /*==================[internal functions definition]==========================*/
 
+hora_t conversion(int cuenta){
+	hora_t nueva_cuenta;
+	int mseg,seg,min;
 
+	seg=cuenta/10;
+
+	mseg=seg*10;
+
+	nueva_cuenta.mseg=cuenta-mseg;
+
+	min=seg/60;
+	nueva_cuenta.seg=(seg%60);
+	nueva_cuenta.min=min;
+
+	return nueva_cuenta;
+}
 
 
 uint8_t Leer_Teclas(io_puerto_t button)
@@ -97,14 +116,35 @@ uint8_t Leer_Teclas(io_puerto_t button)
 	return ret;
 }
 
+char* itoa(int value, char* result, int base) {
+   // check that the base if valid
+   if (base < 2 || base > 36) { *result = '\0'; return result; }
 
+   char* ptr = result, *ptr1 = result, tmp_char;
+   int tmp_value;
+
+   do {
+      tmp_value = value;
+      value /= base;
+      *ptr++ = "zyxwvutsrqponmlkjihgfedcba9876543210123456789abcdefghijklmnopqrstuvwxyz" [35 + (tmp_value - value * base)];
+   } while ( value );
+
+   // Apply negative sign
+   if (tmp_value < 0) *ptr++ = '-';
+   *ptr-- = '\0';
+   while(ptr1 < ptr) {
+      tmp_char = *ptr;
+      *ptr--= *ptr1;
+      *ptr1++ = tmp_char;
+   }
+   return result;
+}
 
 static void initHardware(void)
 {
     SystemCoreClockUpdate();
 
     Board_Init();
-    //lcdInit(16,2,5,8);
     Board_LED_Set(0, FALSE);
 }
 
@@ -119,23 +159,94 @@ static void blink_tsk(void * a)
 static void lcd_tsk(void * a)
 {	i2cConfig( I2C0, 100000 );
 	int j=0;
-    uint8_t adress = 0x3F;//0x3F; //0x27 //0x20 //39
+    uint8_t adress = 0x3F;
+    hora_t tiempo;
+    char *d,*b,*c;
+    char buff1[16],buff2[16],buff3[16];
     LCD_Init();
     tickInit(1);
+
+	LCDclear();
+	LCDbacklight();
+	LCDcursorOff();
+	LCDblinkOff();
+	LCDsetCursor(1, 0);
+	LCD_Write_Str("Software en");
+	LCDsetCursor(1, 1);
+	LCD_Write_Str("Tiempo Real");
+
 	while (1) {
 
 		Board_LED_Toggle(3);
 
-		LCDclear();
-		LCDbacklight();
-		LCDcursorOff();
-		LCDblinkOff();
-		LCDsetCursor(1, 0);
-		LCD_Write_Str("Software en");
-		LCDsetCursor(1, 1);
-		LCD_Write_Str("Tiempo Real");
+		tiempo=conversion(contador);
+		d=itoa(tiempo.mseg,buff1,10);
+		c=itoa(tiempo.seg,buff2,10);
+		b=itoa(tiempo.min,buff3,10);
 
-		vTaskDelay(500 / portTICK_RATE_MS);
+			if(flag_up_down==TRUE){
+				LCDclear();
+				LCDbacklight();
+				LCDcursorOff();
+				LCDblinkOff();
+				LCDsetCursor(1, 0);
+				LCD_Write_Str("Modo UP");
+				LCDsetCursor(1, 1);
+				//LCD_Write_Str("Contando");
+				if(tiempo.min<10){
+					LCD_Write_Str("0");
+					LCDsetCursor(2, 1);
+				}
+				LCD_Write_Str(b);
+				LCDsetCursor(3, 1);
+				LCD_Write_Str(":");
+				LCDsetCursor(4, 1);
+				if(tiempo.seg<10){
+					LCD_Write_Str("0");
+					LCDsetCursor(5, 1);
+				}
+				LCD_Write_Str(c);
+				LCDsetCursor(6, 1);
+				LCD_Write_Str(":");
+				LCDsetCursor(7, 1);
+				LCD_Write_Str(d);
+			}
+			else{
+
+				LCDclear();
+				LCDbacklight();
+				LCDcursorOff();
+				LCDblinkOff();
+				LCDsetCursor(1, 0);
+				LCD_Write_Str("Modo DOWN");
+				LCDsetCursor(1, 1);
+				//LCD_Write_Str("Descontando");
+				if(tiempo.min<10){
+					LCD_Write_Str("0");
+					LCDsetCursor(2, 1);
+				}
+				LCD_Write_Str(b);
+				LCDsetCursor(3, 1);
+				LCD_Write_Str(":");
+				LCDsetCursor(4, 1);
+				if(tiempo.seg<10){
+					LCD_Write_Str("0");
+					LCDsetCursor(5, 1);
+				}
+				LCD_Write_Str(c);
+				LCDsetCursor(6, 1);
+				LCD_Write_Str(":");
+				LCDsetCursor(7, 1);
+				LCD_Write_Str(d);
+			}
+
+
+
+
+
+
+
+		vTaskDelay(100 / portTICK_RATE_MS);
 
 	}
 }
@@ -181,8 +292,8 @@ static void teclas_tsk(void *a)
 
 		tecla3 = Leer_Teclas(button_3);
 
-				if(tecla3!=tecla3_anterior && tecla3==1) {
-					if(flag_start_stop==FALSE){
+		if(tecla3!=tecla3_anterior && tecla3==1) {
+				if(flag_start_stop==FALSE){
 						flag_up_down = TRUE;
 						flag_reset = TRUE;
 					}
@@ -197,7 +308,7 @@ static void teclas_tsk(void *a)
 						flag_reset = TRUE;
 					}
 				}
-		tecla3_anterior = tecla3;
+		tecla4_anterior = tecla4;
 
 		vTaskDelay(500 / portTICK_RATE_MS);
 	}
@@ -206,19 +317,32 @@ static void teclas_tsk(void *a)
 static void reloj_tsk(void *a){
 
 	bool_t toggle = FALSE;
+    int preset=7200;
+    int cont=0;
 	while(1){
+
+
 		if(flag_start_stop==TRUE){
-			contador++;
-			toggle =(bool) Chip_GPIO_GetPinState(LPC_GPIO_PORT, 3, 0);
+			cont++;
+			toggle =(bool_t) Chip_GPIO_GetPinState(LPC_GPIO_PORT, 3, 0);
 			Chip_GPIO_SetPinState(LPC_GPIO_PORT, 3, 0, !toggle);
-			//Board_LED_Toggle(3);
+			Board_LED_Toggle(4);
+			if(flag_up_down==FALSE){
+				contador=preset-cont;
+				if(contador<=0)
+					contador=preset;
+			}
+			else
+				contador=cont;
 		}
 		else
 			Chip_GPIO_SetPinState(LPC_GPIO_PORT, 3, 0, 0);
 
 		if(flag_reset){
 			Chip_GPIO_SetPinState(LPC_GPIO_PORT, 3, 0, 0);
-			contador=0;
+			cont=0;
+			if(flag_up_down==FALSE)
+				contador=preset;
 		}
 
 		vTaskDelay(100 / portTICK_RATE_MS);
@@ -235,9 +359,9 @@ int main(void)
 
 	xTaskCreate(blink_tsk, (const char *)"blink", configMINIMAL_STACK_SIZE*2, 0, tskIDLE_PRIORITY+1, 0);
 
-	xTaskCreate(lcd_tsk, (const char *)"lcd", configMINIMAL_STACK_SIZE*2, 0, tskIDLE_PRIORITY+1, 0);
+	xTaskCreate(lcd_tsk, (const char *)"lcd", configMINIMAL_STACK_SIZE*2, 0, tskIDLE_PRIORITY+2, 0);
 
-	xTaskCreate(teclas_tsk, (const char *)"teclas", configMINIMAL_STACK_SIZE*2, 0, tskIDLE_PRIORITY+2, 0);
+	xTaskCreate(teclas_tsk, (const char *)"teclas", configMINIMAL_STACK_SIZE*2, 0, tskIDLE_PRIORITY+4, 0);
 
 	xTaskCreate(reloj_tsk, (const char *)"reloj", configMINIMAL_STACK_SIZE*2, 0, tskIDLE_PRIORITY+3, 0);
 

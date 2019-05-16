@@ -22,6 +22,7 @@
 // PIC18F2685 : http://www.microchip.com/wwwproducts/Devices.aspx?product=PIC18F2685
 
 #include "LCD_I2C_PCF8574.h"
+#include "driver_i2c.h"
 #include "sapi.h"
 
 #define LCD_CLEAR_DISPLAY           0x01    // Mode : Clears display
