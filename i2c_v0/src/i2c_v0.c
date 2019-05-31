@@ -146,6 +146,15 @@ static void initHardware(void)
 
     Board_Init();
     Board_LED_Set(0, FALSE);
+
+    Chip_SCU_PinMux(
+       6,
+       4,
+       SCU_MODE_INACT | SCU_MODE_ZIF_DIS | SCU_MODE_INBUFF_EN,
+      0
+    );
+    Chip_GPIO_SetDir( LPC_GPIO_PORT, 3, ( 1 << 3), GPIO_OUTPUT );
+    Chip_GPIO_SetPinState( LPC_GPIO_PORT, 3, 3, 0);
 }
 
 static void blink_tsk(void * a)
@@ -174,25 +183,23 @@ static void lcd_tsk(void * a)
 	LCD_Write_Str("Software en");
 	LCDsetCursor(1, 1);
 	LCD_Write_Str("Tiempo Real");
-
+	LCDclear();
 	while (1) {
 
-		Board_LED_Toggle(3);
 
 		tiempo=conversion(contador);
 		d=itoa(tiempo.mseg,buff1,10);
 		c=itoa(tiempo.seg,buff2,10);
 		b=itoa(tiempo.min,buff3,10);
 
+
 			if(flag_up_down==TRUE){
-				LCDclear();
 				LCDbacklight();
 				LCDcursorOff();
 				LCDblinkOff();
 				LCDsetCursor(1, 0);
-				LCD_Write_Str("Modo UP");
+				LCD_Write_Str("Modo UP  ");
 				LCDsetCursor(1, 1);
-				//LCD_Write_Str("Contando");
 				if(tiempo.min<10){
 					LCD_Write_Str("0");
 					LCDsetCursor(2, 1);
@@ -213,14 +220,12 @@ static void lcd_tsk(void * a)
 			}
 			else{
 
-				LCDclear();
 				LCDbacklight();
 				LCDcursorOff();
 				LCDblinkOff();
 				LCDsetCursor(1, 0);
 				LCD_Write_Str("Modo DOWN");
 				LCDsetCursor(1, 1);
-				//LCD_Write_Str("Descontando");
 				if(tiempo.min<10){
 					LCD_Write_Str("0");
 					LCDsetCursor(2, 1);
@@ -324,9 +329,8 @@ static void reloj_tsk(void *a){
 
 		if(flag_start_stop==TRUE){
 			cont++;
-			toggle =(bool_t) Chip_GPIO_GetPinState(LPC_GPIO_PORT, 3, 0);
-			Chip_GPIO_SetPinState(LPC_GPIO_PORT, 3, 0, !toggle);
-			Board_LED_Toggle(4);
+			toggle =(bool_t) Chip_GPIO_GetPinState(LPC_GPIO_PORT, 3, 3);
+			Chip_GPIO_SetPinState(LPC_GPIO_PORT, 3, 3, !toggle);
 			if(flag_up_down==FALSE){
 				contador=preset-cont;
 				if(contador<=0)
@@ -336,13 +340,15 @@ static void reloj_tsk(void *a){
 				contador=cont;
 		}
 		else
-			Chip_GPIO_SetPinState(LPC_GPIO_PORT, 3, 0, 0);
+			Chip_GPIO_SetPinState(LPC_GPIO_PORT, 3, 3, 0);
 
 		if(flag_reset){
-			Chip_GPIO_SetPinState(LPC_GPIO_PORT, 3, 0, 0);
+			Chip_GPIO_SetPinState(LPC_GPIO_PORT, 3, 3, 0);
 			cont=0;
 			if(flag_up_down==FALSE)
 				contador=preset;
+			else
+				contador=cont;
 		}
 
 		vTaskDelay(100 / portTICK_RATE_MS);
