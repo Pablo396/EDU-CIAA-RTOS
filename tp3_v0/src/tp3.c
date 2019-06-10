@@ -149,34 +149,7 @@ static void blink_tsk(void * a)
 	}
 }
 
-/* Tarea para imprimir las secuencias generadas, se deben enviar a los GPIO correspondientes
- * para generar las secuencias e imprimir por LCD el modo de funcionamiento (modo sintetizador o modo secuencias
- *
- */
-static void impresion_tsk(void * a)
-{
 
-	while (1) {
-
-
-			vTaskDelay(100 / portTICK_RATE_MS);
-	}
-}
-
-/*
- * Tarea para Generar una onda senoidal de frecuencia variable a traves del DAC
- * La frecuencia puede ser seteada por puerto serie
- *
- */
-static void sintetizador_tsk(void *a){
-
-	while(1){
-
-
-		vTaskDelay(100 / portTICK_RATE_MS);
-
-	}
-}
 
 /*
  *
@@ -244,6 +217,23 @@ static void teclado_tsk(void *a)
 		vTaskDelay(500 / portTICK_RATE_MS);
 	}
 }
+
+/*
+ * Tarea para Generar una onda senoidal de frecuencia variable a traves del DAC
+ * La frecuencia puede ser seteada por puerto serie
+ *
+ */
+static void sintetizador_tsk(void *a){
+
+	while(1){
+
+
+		vTaskDelay(100 / portTICK_RATE_MS);
+
+	}
+}
+
+
 /*
  * Secuencias a generar
  *
@@ -278,6 +268,19 @@ static void secuencia3_tsk(void *a){
 	}
 }
 
+/* Tarea para imprimir las secuencias generadas, se deben enviar a los GPIO correspondientes
+ * para generar las secuencias e imprimir por LCD el modo de funcionamiento (modo sintetizador o modo secuencias
+ *
+ */
+static void impresion_tsk(void * a)
+{
+
+	while (1) {
+
+
+			vTaskDelay(100 / portTICK_RATE_MS);
+	}
+}
 
 /*
  *
