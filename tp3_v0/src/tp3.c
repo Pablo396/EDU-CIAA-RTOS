@@ -66,13 +66,8 @@ typedef struct{
 	int seg;
 	int mseg;
 }hora_t;
-bool_t flag_start_stop = FALSE;
-bool_t flag_reset = FALSE;
-bool_t flag_up_down = TRUE;
 
-
-int contador=0;
-
+#define BAUDRATE 230400
 //static const io_puerto_t gpioBOTTONBits[] = {{0,4},{0,8},{0,9},{1,9}};
 
 /*==================[internal data declaration]==============================*/
@@ -85,7 +80,12 @@ int contador=0;
 static void initHardware(void);
 
 /*==================[internal data definition]===============================*/
+bool_t flag_start_stop = FALSE;
+bool_t flag_reset = FALSE;
+bool_t flag_up_down = TRUE;
 
+
+int contador=0;
 /*==================[external data definition]===============================*/
 
 /*==================[internal functions definition]==========================*/
@@ -138,6 +138,9 @@ static void initHardware(void)
     );
     Chip_GPIO_SetDir( LPC_GPIO_PORT, 3, ( 1 << 3), GPIO_OUTPUT );
     Chip_GPIO_SetPinState( LPC_GPIO_PORT, 3, 3, 0);
+
+    dacConfig(DAC_ENABLE);
+    uartConfig(UART_USB, BAUDRATE);
 }
 
 /* Signos vitales del sistema*/
@@ -225,7 +228,44 @@ static void teclado_tsk(void *a)
  */
 static void sintetizador_tsk(void *a){
 
+	uint16_t dac_frec=0; //Valor de 0 a 1023
+	uint8_t data;
+	bool_t f_read=0;
+	char *b;
+	char conv[3],buff[10];
+	int i=0,n=0;
+	int udc=1;
 	while(1){
+
+
+
+		f_read=uartReadByte(UART_USB, &data);
+
+		if(f_read==1){
+			n=0;
+				while(f_read!=0){
+					if(data>=48 && data <=57){
+						conv[n]=data;
+						n++;
+						dac_frec=0;
+					}
+					f_read=uartReadByte(UART_USB, &data);
+				}
+			for(i=n;i>0;i--){
+				dac_frec=dac_frec+((conv[i-1]-48)*udc);
+				udc=udc*10;
+			}
+			udc=1;
+			b=itoa(dac_frec,buff,10);
+			uartWriteString(UART_USB, b);
+		}
+
+		if(dac_frec>500)
+			dac_frec=500;
+		if(dac_frec<0)
+			dac_frec=0;
+		dacWrite(AO, dac_frec);
+
 
 
 		vTaskDelay(100 / portTICK_RATE_MS);
